@@ -9,6 +9,9 @@ testIAD_mpfr(
   object,
   predictfun,
   X,
+  newX = NULL,
+  y = NULL,
+  alternative = "twoSided",
   centering = FALSE,
   nCoresPDP = 1,
   precBits = 53 * 2
@@ -30,6 +33,17 @@ are evaluated.}
 (class matrix or data.frame). The structure of the data depends on the 
 specified argument \emph{predictfun}.}
 
+\item{newX}{Test data set, which is used in the evaluation of the partial
+dependence functions (class "matrix" or "data.frame"). Default value NULL evaluates
+the interaction test on training data \emph{X}.}
+
+\item{y}{Response (numeric vector). Default value NULL means that the 
+statistic is not based on response information.}
+
+\item{alternative}{Should the hypothesis be tested two-sided \emph{alternative="twoSided"},
+greater \emph{alternative="greater"} or less \emph{alternative="less"} (character vector)? 
+Default is "twoSided".}
+
 \item{centering}{Should the resulting values be mean centered? 
 (logical scalar). Default corresponds to output original values.}
 
@@ -43,7 +57,29 @@ calculation of the predictions from the estimated model. Default is defined
 to be double the amount of the 53 Bits usually used in R.}
 }
 \value{
-Vector of estimated the PDP curve values for each sample in \emph{X}.
+List with following entries:
+ \itemize{
+\item {testStat:} Test statistic based on one-sample Gaussian test.
+\item {pValue:} P-value based on asymptotic normal distribution.
+\item {IAD_f_terms:} If \emph{y=NULL} then the terms used to calculate the
+variance of the predictions with possible interaction effects 
+in set \emph{s} are returned. If \emph{y!=NULL}, then the terms of the MSE of the prediction model 
+with interactions is returned.
+\item {IAD_f:} If \emph{y=NULL} then the variance of the predictions with possible interaction effects 
+in set \emph{s} is returned. If \emph{y!=NULL}, then the MSE of the prediction model 
+with possible interactions is returned.
+\item {IAD_PD_terms:} If \emph{y=NULL} then the terms used to calculate the 
+variance of predictions under the null hypothesis
+of no interaction effects in set \emph{s} are returned. If \emph{y!=NULL}, 
+then the terms used to calculate the MSE of the prediction model are returned.
+under the null hypothesis of no interaction effects are returned.
+\item {IAD_PD:} If \emph{y=NULL} then the variance of predictions under the null hypothesis
+of no interaction effects of set \emph{s} is returned. If \emph{y!=NULL}, 
+then the MSE of the prediction model is returned.
+\item {z3} Terms used to calculate the the interaction difference.
+under the null hypothesis of no interaction effects is returned.
+\item {IAD:} Interaction difference calculated as mean of the terms \emph{z3}.
+}
 }
 \description{
 Tests if a given set \emph{s} of covariates contributes to interaction
@@ -52,10 +88,20 @@ effects in the prediction model.
 \details{
 The data set used to evaluate the interaction test coulbe be training 
 or test data. The proof of the asymptotic distribution only works in case of
-test data. Therefore we recommend usage of test data for evaluation.
+test data. Therefore we recommend usage of test data for evaluation. Two types 
+of hypothesis are recommended:
+\itemize{
+\item {Model interactions:} Model does not have interaction effects between 
+covariates in set \emph{s} and 
+between other covariates and those of set \emph{s}. Argument \emph{colInd} specifies 
+the set s and argument \emph{alternative} should be set to "twoSided".
+\item {MSE improvement:} Do interactions between between covariates in set \emph{s} and 
+between other covariates and those of set \emph{s} descrease MSE?
+Argument \emph{alternative} should be set to "less".
+}
 }
 \note{
-Numerical precision does have a big influence on Type I error
+Numerical precision does have influence on Type I error
 percentages. Under the null hypothesis values of the test statistic can be
 very small near zero. To lessen the impact of random rounding errors increased
 numerical precision is important.

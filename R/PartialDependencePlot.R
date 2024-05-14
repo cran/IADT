@@ -16,6 +16,8 @@
 #' specified argument \emph{predictfun}.
 #' @param centering Should the resulting values be mean centered? 
 #' (logical scalar). Default corresponds to output original values.
+#' @param outputVector Should be only the partial dependence function returned 
+#' @param newX Test data set (class "data.frame")
 #' @param nCores Number of cores used in standard parallel computation
 #' setup based on R \emph{parallel} package. The default value of one uses 
 #' serial processing across observations.
@@ -65,8 +67,10 @@
 #' # -> Both curves are similiar
 #' 
 #' @export pdpEst_mpfr
-pdpEst_mpfr <- function(colInd, object, predictfun, X, 
-                        centering=FALSE, nCores=1, precBits=53*2){
+pdpEst_mpfr <- function(colInd, object, predictfun, X,
+                        centering=FALSE,
+                        outputVector=TRUE,
+                        newX=NULL, nCores=1, precBits=53*2){
   
   if( all(colInd==0) ){
     
@@ -81,17 +85,31 @@ pdpEst_mpfr <- function(colInd, object, predictfun, X,
   
   if( nCores==1 ){
     
-    nObs <- dim(X)[1]
-
+    if( is.null(newX) ){
+      nObs <- dim(X)[1]
+    } else{
+      nObs <- dim(newX)[1]
+    }
+    
     # Predictions
     preds <- vector("list", nObs)
     Xtemp <- X
     for( i in 1:nObs ){
-
-      for( k in 1:length(colInd) ){
-        Xtemp[, colInd[k] ] <- X[i, colInd[k] ]
+      
+      if( is.null(newX) ){
+        
+        for( k in 1:length(colInd) ){
+          Xtemp[, colInd[k] ] <- X[i, colInd[k] ]
+        }
+        
+      } else{
+        
+        for( k in 1:length(colInd) ){
+          Xtemp[, colInd[k] ] <- newX[i, colInd[k] ]
+        }
+        
       }
-
+      
       preds[[i]] <- mean(mpfr(predictfun(object=object, X=Xtemp), 
                               precBits = precBits))
       
@@ -101,10 +119,9 @@ pdpEst_mpfr <- function(colInd, object, predictfun, X,
     
   } else{
     
-    # Definitions of parallel environment
     packageToLoad <- names(sessionInfo()$otherPkgs)
     clust0 <- makeCluster(nCores)
-    clusterExport(clust0, varlist=c("predictfun", "object", "X",
+    clusterExport(clust0, varlist=c("predictfun", "object", "X", 
                                     "packageToLoad", "colInd"),
                   envir=environment())
     invisible(clusterEvalQ(clust0, expr={
@@ -112,33 +129,55 @@ pdpEst_mpfr <- function(colInd, object, predictfun, X,
         library(packageToLoad[i], character.only = TRUE)
       }
     }))
-    
-    # Evaluation function
     evalFunc <- function(i){
       Xtemp <- X
-      
-      for( k in 1:length(colInd) ){
-        Xtemp[, colInd[k] ] <- X[i, colInd[k] ]
+      if( is.null(newX) ){
+        for( k in 1:length(colInd) ){
+          Xtemp[, colInd[k] ] <- X[i, colInd[k] ]
+        }
+      }else{
+        for( k in 1:length(colInd) ){
+          Xtemp[, colInd[k] ] <- newX[i, colInd[k] ]
+        }
       }
-  
       pdp1 <- mean(mpfr(predictfun(object=object, X=Xtemp), 
                         precBits = precBits))
       rm(Xtemp)
       gc()
       return(pdp1)
     }
-    
-    # Run parallel processing
     preds <- parLapplyLB(cl=clust0, X=1:dim(X)[1], fun=evalFunc)
     stopCluster(clust0)
-    preds <- unlist(preds)
+    preds <- new("mpfr", unlist(preds))
   }
   
   # Aggregation
   if(centering){
+    
+    if(outputVector){
+      
       return(preds-mean(preds))
+      
+    } else{
+      
+      return(cbind(pdp=preds-mean(preds), X[, colInd]))
+      
+    }
+    
+    
+    
   } else{
-    return(preds)
+    
+    if(outputVector){
+      
+      return(preds)
+      
+    } else{
+      
+      return(cbind(pdp=preds, X[, colInd]))
+      
+    }
+    
   }
   
 }

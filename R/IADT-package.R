@@ -14,7 +14,7 @@
 #' refitting black-box prediction models.
 #' 
 #' \tabular{ll}{ Package: \tab IADT \cr Type: \tab Package \cr Version:
-#' \tab 1.0.0 \cr Date: \tab 2023-07-12 \cr License: \tab GPL-3 \cr }
+#' \tab 1.2.1 \cr Date: \tab 2024-05-14 \cr License: \tab GPL-3 \cr }
 #' 
 #' @name IADT-package
 #' @aliases IADT-package

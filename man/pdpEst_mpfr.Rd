@@ -10,6 +10,8 @@ pdpEst_mpfr(
   predictfun,
   X,
   centering = FALSE,
+  outputVector = TRUE,
+  newX = NULL,
   nCores = 1,
   precBits = 53 * 2
 )
@@ -32,6 +34,10 @@ specified argument \emph{predictfun}.}
 
 \item{centering}{Should the resulting values be mean centered? 
 (logical scalar). Default corresponds to output original values.}
+
+\item{outputVector}{Should be only the partial dependence function returned}
+
+\item{newX}{Test data set (class "data.frame")}
 
 \item{nCores}{Number of cores used in standard parallel computation
 setup based on R \emph{parallel} package. The default value of one uses 
